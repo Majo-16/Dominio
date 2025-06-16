@@ -2,89 +2,117 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Resolución de Desigualdades</title>
+  <title>Desigualdades con Gráfica</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #f0f8ff;
-      margin: 30px;
-    }
-    h2 {
-      color: #0077cc;
+      background-color: #f9fbfd;
+      padding: 20px;
     }
     input, button {
       padding: 10px;
-      margin: 5px 0;
       font-size: 16px;
+      margin: 5px 0;
     }
     #resultado {
       margin-top: 20px;
       padding: 10px;
-      background-color: #e6f7ff;
-      border: 1px solid #0077cc;
+      background-color: #e0f7fa;
+      border: 1px solid #0097a7;
+    }
+    canvas {
+      margin-top: 20px;
+      max-width: 700px;
     }
   </style>
 </head>
 <body>
 
-  <h2>Calculadora de Desigualdades Lineales y Cuadráticas</h2>
-  <p>Escribe una desigualdad (ej: <code>2x + 3 < 7</code> o <code>x^2 - 4x + 3 >= 0</code>):</p>
-  <input type="text" id="inputDesigualdad" size="40" placeholder="Ejemplo: x^2 - 4x + 3 >= 0">
-  <br>
-  <button onclick="resolver()">Resolver</button>
+<h2>🔍 Resolución de Desigualdades y Gráfica</h2>
 
-  <div id="resultado"></div>
+<p>Introduce una desigualdad (por ejemplo: <code>x^2 - 4x + 3 &gt;= 0</code>):</p>
+<input type="text" id="inputDesigualdad" size="40" placeholder="Ej: x^2 - 4x + 3 >= 0">
+<br>
+<button onclick="resolver()">Resolver y Graficar</button>
 
-  <script>
-    function resolver() {
-      const input = document.getElementById("inputDesigualdad").value;
-      try {
-        // Validar entrada
-        const desigualdad = input.replace(/\s+/g, '');
-        const operadores = ['<', '<=', '>=', '>'];
-        let opEncontrado = operadores.find(op => desigualdad.includes(op));
+<div id="resultado"></div>
 
-        if (!opEncontrado) throw "Operador no válido";
+<canvas id="grafica" height="300"></canvas>
 
-        const [izquierda, derecha] = desigualdad.split(opEncontrado);
+<script>
+  let chart; // Para poder actualizar el gráfico
 
-        // Sustituir ^ por ** para evaluar
-        const f = (x) => {
-          return eval(izquierda.replace(/x/g, `(${x})`).replace(/\^/g, '**')) - 
-                 eval(derecha.replace(/x/g, `(${x})`).replace(/\^/g, '**'));
-        };
-
-        // Probar valores para estimar el intervalo solución
-        let solucion = [];
-        for (let x = -100; x <= 100; x += 0.5) {
-          let resultado = f(x);
-          let cumple = false;
-
-          switch (opEncontrado) {
-            case '<': cumple = resultado < 0; break;
-            case '<=': cumple = resultado <= 0; break;
-            case '>': cumple = resultado > 0; break;
-            case '>=': cumple = resultado >= 0; break;
-          }
-
-          if (cumple) solucion.push(x);
-        }
-
-        if (solucion.length > 0) {
-          const desde = Math.min(...solucion);
-          const hasta = Math.max(...solucion);
-          document.getElementById("resultado").innerHTML =
-            `✔ Solución aproximada: <strong>x ∈ [${desde}, ${hasta}]</strong>`;
-        } else {
-          document.getElementById("resultado").innerHTML = "❌ No se encontró solución en el intervalo [-100, 100].";
-        }
-
-      } catch (e) {
-        document.getElementById("resultado").innerHTML = "⚠ Error: Verifica el formato de la desigualdad.";
-      }
+  function resolver() {
+    const entrada = document.getElementById("inputDesigualdad").value.replace(/\s+/g, '');
+    const operadores = ['<=', '>=', '<', '>'];
+    let op = operadores.find(o => entrada.includes(o));
+    if (!op) {
+      document.getElementById("resultado").innerText = "⚠ Ingresa una desigualdad válida (usa <, <=, >, >=)";
+      return;
     }
-  </script>
+
+    const [lhs, rhs] = entrada.split(op);
+    const expr = `${lhs} - (${rhs})`.replace(/\^/g, '**');
+
+    // Función evaluadora
+    const f = x => {
+      try {
+        return eval(expr.replace(/x/g, `(${x})`));
+      } catch (e) {
+        return NaN;
+      }
+    };
+
+    // Generar datos para graficar
+    let xVals = [], yVals = [], solucion = [];
+    for (let x = -20; x <= 20; x += 0.1) {
+      let y = f(x);
+      xVals.push(x);
+      yVals.push(y);
+
+      let cumple = false;
+      switch (op) {
+        case '<': cumple = y < 0; break;
+        case '<=': cumple = y <= 0; break;
+        case '>': cumple = y > 0; break;
+        case '>=': cumple = y >= 0; break;
+      }
+      if (cumple) solucion.push(x);
+    }
+
+    // Estimar intervalo de solución
+    let intervaloTexto = solucion.length > 0
+      ? `✔ Intervalo que satisface la desigualdad: <strong>x ∈ [${solucion[0].toFixed(2)}, ${solucion[solucion.length - 1].toFixed(2)}]</strong>`
+      : "❌ No se encontró solución en el intervalo [-20, 20].";
+
+    document.getElementById("resultado").innerHTML = intervaloTexto;
+
+    // Graficar
+    const ctx = document.getElementById("grafica").getContext("2d");
+    if (chart) chart.destroy();
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: xVals,
+        datasets: [{
+          label: 'f(x) = lado izquierdo - lado derecho',
+          data: yVals,
+          borderColor: '#0077cc',
+          borderWidth: 2,
+          fill: false
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: { title: { display: true, text: 'x' } },
+          y: { title: { display: true, text: 'f(x)' }, zeroLineColor: 'gray' }
+        }
+      }
+    });
+  }
+</script>
 
 </body>
 </html>
-

@@ -1,1 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Resolución de Desigualdades</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f8ff;
+      margin: 30px;
+    }
+    h2 {
+      color: #0077cc;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px 0;
+      font-size: 16px;
+    }
+    #resultado {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #e6f7ff;
+      border: 1px solid #0077cc;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Calculadora de Desigualdades Lineales y Cuadráticas</h2>
+  <p>Escribe una desigualdad (ej: <code>2x + 3 < 7</code> o <code>x^2 - 4x + 3 >= 0</code>):</p>
+  <input type="text" id="inputDesigualdad" size="40" placeholder="Ejemplo: x^2 - 4x + 3 >= 0">
+  <br>
+  <button onclick="resolver()">Resolver</button>
+
+  <div id="resultado"></div>
+
+  <script>
+    function resolver() {
+      const input = document.getElementById("inputDesigualdad").value;
+      try {
+        // Validar entrada
+        const desigualdad = input.replace(/\s+/g, '');
+        const operadores = ['<', '<=', '>=', '>'];
+        let opEncontrado = operadores.find(op => desigualdad.includes(op));
+
+        if (!opEncontrado) throw "Operador no válido";
+
+        const [izquierda, derecha] = desigualdad.split(opEncontrado);
+
+        // Sustituir ^ por ** para evaluar
+        const f = (x) => {
+          return eval(izquierda.replace(/x/g, `(${x})`).replace(/\^/g, '**')) - 
+                 eval(derecha.replace(/x/g, `(${x})`).replace(/\^/g, '**'));
+        };
+
+        // Probar valores para estimar el intervalo solución
+        let solucion = [];
+        for (let x = -100; x <= 100; x += 0.5) {
+          let resultado = f(x);
+          let cumple = false;
+
+          switch (opEncontrado) {
+            case '<': cumple = resultado < 0; break;
+            case '<=': cumple = resultado <= 0; break;
+            case '>': cumple = resultado > 0; break;
+            case '>=': cumple = resultado >= 0; break;
+          }
+
+          if (cumple) solucion.push(x);
+        }
+
+        if (solucion.length > 0) {
+          const desde = Math.min(...solucion);
+          const hasta = Math.max(...solucion);
+          document.getElementById("resultado").innerHTML =
+            `✔ Solución aproximada: <strong>x ∈ [${desde}, ${hasta}]</strong>`;
+        } else {
+          document.getElementById("resultado").innerHTML = "❌ No se encontró solución en el intervalo [-100, 100].";
+        }
+
+      } catch (e) {
+        document.getElementById("resultado").innerHTML = "⚠ Error: Verifica el formato de la desigualdad.";
+      }
+    }
+  </script>
+
+</body>
+</html>
 
